@@ -38,6 +38,30 @@ export async function snapshot(){
   remoteCache=data;return data;
 }
 export async function logout(){if(!demo&&session)await rpc('camp_logout',{p_token:session.token});forget();}
+export async function adminCatalog(){
+  if(!demo)return rpc('camp_admin_catalog',{p_token:session.token});
+  return ['event','credentials','sessions','audit','admin_changes'].map(name=>({schema:'camp_private',name,editable:name!=='admin_changes',managed:false,columns:[]}));
+}
+const demoTables=()=>JSON.parse(localStorage.getItem('cadipas-demo-tables')||'{"credentials":[],"sessions":[],"admin_changes":[]}');
+export async function adminRows(schema,table,offset=0){
+  if(!demo)return rpc('camp_admin_rows',{p_token:session.token,p_schema:schema,p_table:table,p_offset:offset});
+  const s=await snapshot();const tables=demoTables();const values=table==='event'?[{id:1,data:Object.fromEntries(Object.entries(s).filter(([key])=>key!=='logs'))}]:table==='audit'?s.logs:tables[table]||[];
+  return {rows:values.slice(offset,offset+50).map(value=>({value,revision:JSON.stringify(value)})),total:values.length,primary:[table==='credentials'?'role':table==='sessions'?'token_hash':'id']};
+}
+export async function adminWrite({schema,table,action,key,row,revision,reason}){
+  if(!demo){const result=await rpc('camp_admin_write',{p_token:session.token,p_schema:schema,p_table:table,p_action:action,p_key:key,p_row:row,p_revision:revision,p_reason:reason});remoteCache=null;return result;}
+  if(getSession()?.role!=='admin')throw Error('Solo Super dios.');
+  const s=await snapshot(),tables=demoTables();let values=table==='event'?[{id:1,data:Object.fromEntries(Object.entries(s).filter(([k])=>k!=='logs'))}]:table==='audit'?s.logs:tables[table]||[];
+  const index=values.findIndex(v=>Object.entries(key||{}).every(([k,value])=>v[k]===value));
+  const old=action==='insert'?null:values[index];
+  if(action!=='insert'&&(!old||JSON.stringify(old)!==revision))throw Error('El registro cambió. Recarga antes de editar.');
+  if(table==='admin_changes')throw Error('Historial protegido.');
+  if(table==='event'&&(action!=='update'||row.id!==1))throw Error('El evento no se elimina ni duplica.');
+  if(action==='delete')values.splice(index,1);else if(action==='insert')values.push(row);else values[index]=row;
+  const log={id:crypto.randomUUID(),actor:getSession().name,role:'admin',action:'admin_'+action,at:new Date().toISOString(),payload:{table:schema+'.'+table,reason},before:old,after:action==='delete'?null:row};
+  if(table==='event')localStorage.setItem(demoKey,JSON.stringify({...row.data,logs:[log,...s.logs]}));else{if(table==='audit')s.logs=values;else tables[table]=values;s.logs.unshift(log);localStorage.setItem(demoKey,JSON.stringify(s));}
+  tables.admin_changes.unshift(log);localStorage.setItem('cadipas-demo-tables',JSON.stringify(tables));return {ok:true};
+}
 export async function mutate(action,payload){
   if(!demo)return rpc('camp_mutate',{p_token:session.token,p_action:action,p_payload:payload});
   const s=await snapshot();const before=structuredClone(s);const admin=session.role==='admin';

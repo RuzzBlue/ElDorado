@@ -1,5 +1,6 @@
 import {TROOPS,PHASES,BLOCKS,troop,eligible,standings,summary,rankEntries} from './domain.js';
 import {configured,getSession,isDemo,login,startDemo,snapshot,mutate,logout,forget,checkConnection} from './api.js';
+import {openDatabaseEditor} from './admin-db.js';
 const $=s=>document.querySelector(s), app=$('#app'), modal=$('#modal');
 let state=null,tab='home',block='Todos',search='',busy=false,lastSync=null,timer,formDirty=false;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -28,7 +29,7 @@ function nav(){return `<nav class="bottomnav" aria-label="Principal"><div class=
 function render(){
   if(!state)return loginPage();const user=getSession();
   app.innerHTML=`<main class="shell"><header class="topbar"><div class="brand"><img src="./icon.svg" alt="">EL DORADO<small>CADIPAS · EVALUACIÓN</small></div><div class="session"><div><span class="badge ${admin()?'gold':''}">${admin()?'Super dios':'Dios'}</span><div class="connection" id="sync"><span class="dot ${navigator.onLine?'':'offline'}"></span>${isDemo()?'Demo local':lastSync?'Actualizado '+lastSync.toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'}):'Conectando'}</div></div><span class="avatar" title="${esc(user.name)}">${esc(user.name[0]?.toUpperCase())}</span><button class="iconbtn" data-logout aria-label="Salir" title="Salir">↪</button></div></header>${isDemo()?'<div class="notice">Modo demostración · Datos de ejemplo en este dispositivo. No se comparten con otros celulares.</div>':''}${state.closed?'<div class="notice">Evento cerrado. Los resultados están bloqueados. El administrador puede reabrirlo.</div>':''}${({home:home,games:games,rank:rank,results:results,admin:control}[tab]||home)()}</main>${nav()}`;
-  if(tab==='admin'&&admin()){const actions=app.querySelector('.actions');actions?.insertAdjacentHTML('beforeend','<button class="btn" data-tiebreak>Resolver desempates</button>');}
+  if(tab==='admin'&&admin()){const actions=app.querySelector('.actions');actions?.insertAdjacentHTML('beforeend','<button class="btn" data-tiebreak>Resolver desempates</button><button class="btn primary" data-database>Base de datos · editar todo</button>');}
   if(tab==='rank'){const winner=summary(state).patrolWinner;if(winner)app.querySelector('.grid .card .section-head')?.insertAdjacentHTML('afterend',`<p class="help"><strong>Primera posición: ${esc(winner.name)}</strong></p>`);}
 }
 function intro(title,subtitle,action=''){return `<div class="intro"><div><div class="eyebrow">Rumbo a El Dorado</div><h1>${title}</h1><p>${subtitle}</p></div>${action}</div>`;}
@@ -83,6 +84,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
   if(b.dataset.match)return matchForm(b.dataset.match,Number(b.dataset.round),Number(b.dataset.index));
   if(b.hasAttribute('data-rules'))return rules();
   if(b.hasAttribute('data-tiebreak'))return tiebreakForm();
+  if(b.hasAttribute('data-database'))return run(()=>openDatabaseEditor({open,close,toast,onChange:async()=>{state=await snapshot();lastSync=new Date();render();}}));
   if(b.dataset.cancelTournament)return cancelTournamentForm(b.dataset.cancelTournament);
   if(b.dataset.export)return exportFile(b.dataset.export);
   if(b.dataset.status){const r=state.results.find(r=>r.id===b.dataset.id);open(`${head(b.dataset.status==='void'?'Anular resultado':'Validar resultado')}<p class="help">${esc(gname(r.game))} · ${esc(r.label)}</p><form id="status-form"><label class="field"><span>Motivo o revisión realizada</span><textarea name="reason" required minlength="5" maxlength="500" placeholder="Ej. Marcador verificado con el responsable"></textarea></label><button class="btn primary full">Confirmar</button></form>`);$('#status-form').onsubmit=e=>{e.preventDefault();run(()=>save('result_status',{id:r.id,version:r.version,status:b.dataset.status,reason:new FormData(e.target).get('reason')}));};return;}

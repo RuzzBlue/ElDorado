@@ -57,8 +57,9 @@ export function rankEntries(entries,game){
 export function standings(state){
   const rows=state.patrols.map(p=>({...p,wins:0,points:0,played:0,provisional:0,saturday:0,sunday:0}));
   const byId=Object.fromEntries(rows.map(p=>[p.id,p]));
+  const games=Object.fromEntries(state.games.map(g=>[g.id,g]));
   for(const r of state.results){
-    if(r.status==='void')continue;
+    if(r.status==='void'||games[r.game]?.enabled===false)continue;
     for(const e of r.entries){const p=byId[e.patrol];if(!p)continue;if(r.status!=='validated'){p.provisional++;continue;}
       p.played++;p.points+=Number(e.points||0);if(r.official_win&&r.winner===p.id)p.wins++;
       if(r.phase==='domingo')p.sunday+=Number(e.points||0);else p.saturday+=Number(e.points||0);
@@ -96,4 +97,5 @@ export function scoreBracket(t,round,index,a,b,metric){
 }
 // Cada juego tiene un único ganador: una victoria equivale a un punto.
 export function allocate(entries,winner){return entries.map(e=>({...e,points:e.patrol===winner?1:0}));}
+
 

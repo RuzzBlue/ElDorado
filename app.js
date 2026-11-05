@@ -70,7 +70,7 @@ function validateAllForm(){
   const patrolsOf=r=>(r.entries||[]).map(e=>state.patrols.find(p=>p.id===e.patrol)).filter(Boolean);
   const pointsOf=r=>(r.entries||[]).reduce((n,e)=>n+Number(e.points||0),0);
   const filters=[['all','Todos'],['block','Módulo'],['phase','Día'],['kind','Tipo'],['scope','Alcance de tropa'],['patrol','Patrulla afectada'],['group','Grupo afectado'],['custom','Personalizado']];
-  open(`${head('Validar resultados')}<p class="help">Revisa los resultados pendientes y marca los que quieras validar. Se validan todos juntos y cada uno guarda el nombre de quien valida como comentario.</p><form id="bulk-validate-form"><div class="form-grid bulk-filters"><label class="field"><span>Filtrar por</span><select id="bulk-filter">${options(filters,'all')}</select></label><div id="bulk-filter-extra"></div></div><div class="bulk-list-head"><label class="bulk-selectall"><input type="checkbox" id="bulk-all"> Seleccionar visibles</label><div class="actions"><span id="bulk-count" class="bulk-summary"></span><button type="button" class="btn small" id="bulk-clear">Limpiar</button></div></div><div id="bulk-list" class="bulk-list"></div><div id="bulk-total" class="bulk-summary" style="margin:10px 0 16px"></div><label class="field"><span>Nombre de quien valida</span><input name="actor" required minlength="2" maxlength="60" value="${esc(getSession()?.name||'')}" placeholder="Ej. Bryan Ruz"></label><p class="help">Se guardará como «Validado por …» en cada resultado seleccionado.</p><button class="btn primary full" id="bulk-submit">Validar seleccionados</button></form>`);
+  open(`${head('Validar resultados')}<p class="help">Revisa los resultados pendientes y marca los que quieras validar. Al cambiar de filtro se limpia la selección, así validas solo lo que tienes a la vista. Se validan todos juntos y cada uno guarda el nombre de quien valida como comentario.</p><form id="bulk-validate-form"><div class="form-grid bulk-filters"><label class="field"><span>Filtrar por</span><select id="bulk-filter">${options(filters,'all')}</select></label><div id="bulk-filter-extra"></div></div><div class="bulk-list-head"><label class="bulk-selectall"><input type="checkbox" id="bulk-all"> Seleccionar visibles</label><div class="actions"><span id="bulk-count" class="bulk-summary"></span><button type="button" class="btn small" id="bulk-clear">Limpiar</button></div></div><div id="bulk-list" class="bulk-list"></div><div id="bulk-total" class="bulk-summary" style="margin:10px 0 16px"></div><label class="field"><span>Nombre de quien valida</span><input name="actor" required minlength="2" maxlength="60" value="${esc(getSession()?.name||'')}" placeholder="Ej. Bryan Ruz"></label><p class="help">Se guardará como «Validado por …» en cada resultado seleccionado.</p><button class="btn primary full" id="bulk-submit">Validar seleccionados</button></form>`);
   modal.classList.add('bulk');
   const filter=$('#bulk-filter'),extra=$('#bulk-filter-extra'),list=$('#bulk-list'),all=$('#bulk-all');
   let mode='all',value='';
@@ -113,9 +113,9 @@ function validateAllForm(){
     else if(opts.length)html=`<label class="field"><span>${mode==='patrol'?'Patrulla':mode==='group'?'Grupo':mode==='scope'?'Tropas':'Valor'}</span><select id="bulk-value">${options(opts,value)}</select></label>`;
     extra.innerHTML=html;
     const input=$('#bulk-value');
-    if(input){const update=()=>{value=input.value;drawList();};input.onchange=update;input.oninput=update;}
+    if(input){const update=()=>{if(input.value!==value)selected.clear();value=input.value;drawList();};input.onchange=update;input.oninput=update;}
   };
-  filter.onchange=()=>{mode=filter.value;value='';drawExtra();drawList();};
+  filter.onchange=()=>{mode=filter.value;value='';selected.clear();drawExtra();drawList();};
   all.onchange=()=>{visible().forEach(r=>all.checked?selected.add(r.id):selected.delete(r.id));drawList();};
   $('#bulk-clear').onclick=()=>{selected.clear();drawList();};
   $('#bulk-validate-form').onsubmit=e=>{

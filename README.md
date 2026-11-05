@@ -159,7 +159,7 @@ Para una instalación existente, ejecuta `supabase/reopen-results.sql` una vez e
 
 En **Ganadores registrados**, junto a los filtros, el botón **Validar todo** abre una revisión de todos los resultados **Por validar**. La lista es desplazable y cada fila muestra la actividad, el módulo, el día, el tipo, el ganador y los puntos que se asignarían a cada patrulla.
 
-Se puede filtrar por **módulo, día, tipo, alcance de tropa, patrulla afectada, grupo afectado** o con una búsqueda personalizada. Los filtros solo cambian lo que se muestra; la selección se conserva y el resumen indica cuántos resultados y puntos se van a asignar. **Seleccionar visibles** marca la lista filtrada y **Limpiar** quita toda la selección.
+Se puede filtrar por **módulo, día, tipo, alcance de tropa, patrulla afectada, grupo afectado** o con una búsqueda personalizada. Al cambiar de filtro se limpia la selección, de modo que solo se puedan validar los resultados que están a la vista; el resumen indica cuántos resultados y puntos se van a asignar. **Seleccionar visibles** marca la lista filtrada y **Limpiar** quita toda la selección.
 
 Antes de confirmar se escribe el **nombre de quien valida**. Ese nombre se guarda como comentario `Validado por …` en cada resultado y queda en la bitácora. La validación es conjunta: si otro dirigente modificó uno de los seleccionados, no se valida ninguno y se pide actualizar. Solo Super dios puede abrir esta pantalla y el servidor vuelve a comprobar el rol.
 

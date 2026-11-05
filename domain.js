@@ -45,7 +45,7 @@ const raw = [
 ['alunizaje','Alunizaje forzado','domingo','Módulo 6','13:25 / 13:55','all','higher','Pelotas recogidas válidamente.'],
 ['bandas6','Batalla de las bandas final','domingo','Módulo 6','14:25','all','jury','Coordinación 40, participación 40, consigna 20. Bonificación, sin victoria oficial.'],
 ];
-export const GAMES=raw.map(([id,name,phase,block,time,scope,metric,rules])=>({id,name,phase,block,time,scope,metric,rules,bonus:id.startsWith('bandas'),enabled:true}));
+export const GAMES=raw.map(([id,name,phase,block,time,scope,metric,rules])=>({id,name,phase,block,time,scope,metric,rules,bonus:false,enabled:true}));
 export const troop = id => TROOPS.find(t=>t.id===id);
 export function eligible(p,g){return g.scope==='all'||troop(p.troop)?.alliance===g.scope;}
 export function rankEntries(entries,game){
@@ -94,4 +94,6 @@ export function scoreBracket(t,round,index,a,b,metric){
   if(t.rounds[round+1])t.rounds[round+1][Math.floor(index/2)][index%2?'b':'a']=m.winner;
   return t;
 }
-export function allocate(entries,winner,bonus=false){return entries.map(e=>({...e,points:e.patrol===winner?(bonus?1:3):(bonus?0:1)}));}
+// Cada juego tiene un único ganador: una victoria equivale a un punto.
+export function allocate(entries,winner){return entries.map(e=>({...e,points:e.patrol===winner?1:0}));}
+

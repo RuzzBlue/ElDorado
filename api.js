@@ -62,7 +62,12 @@ export async function adminWrite({schema,table,action,key,row,revision,reason}){
   if(table==='event')localStorage.setItem(demoKey,JSON.stringify({...row.data,logs:[log,...s.logs]}));else{if(table==='audit')s.logs=values;else tables[table]=values;s.logs.unshift(log);localStorage.setItem(demoKey,JSON.stringify(s));}
   tables.admin_changes.unshift(log);localStorage.setItem('cadipas-demo-tables',JSON.stringify(tables));return {ok:true};
 }
+async function recordWinner(payload){
+  if(!demo)return rpc('camp_record_winner',{p_token:session.token,p_game:payload.game,p_winner:payload.winner,p_id:payload.id,p_version:payload.version||0,p_reason:payload.reason||''});
+  return mutate('save_winner',payload);
+}
 export async function mutate(action,payload){
+  if(action==='save_winner'&&!demo)return recordWinner(payload);
   if(!demo)return rpc('camp_mutate',{p_token:session.token,p_action:action,p_payload:payload});
   const s=await snapshot();const before=structuredClone(s);const admin=session.role==='admin';
   if(s.closed&&!['set_closed'].includes(action))throw Error('El evento está cerrado.');
@@ -81,6 +86,16 @@ export async function mutate(action,payload){
     const t=s.tournaments.find(t=>t.id===payload.id);if(t.cancelled||t.version!==payload.version)throw Error('Otro dirigente actualizó este torneo. Actualiza.');
     const g=s.games.find(g=>g.id===t.game);scoreBracket(t,payload.round,payload.index,payload.a,payload.b,g.metric);t.version++;
     const final=t.rounds.at(-1)[0];if(final.winner){const entries=t.participants.map(p=>({patrol:p,score:0,points:p===final.winner?3:[final.a,final.b].includes(p)?2:1}));s.results.push({id:t.id,game:g.id,phase:g.phase,label:t.name,entries,winner:final.winner,official_win:!g.bonus,status:'provisional',version:1,kind:'tournament',created_by:session.name,updated_at:new Date().toISOString()});}
+  }else if(action==='save_winner'){
+    const g=s.games.find(g=>g.id===payload.game);const old=s.results.find(r=>r.id===payload.id);
+    if(!g)throw Error('Juego no disponible.');
+    if(old&&old.version!==payload.version)throw Error('El resultado cambió. Actualiza.');
+    if(old&&session.role!=='admin')throw Error('Solo Super dios puede corregir un ganador registrado.');
+    if(s.results.some(r=>r.id!==payload.id&&r.game===g.id&&r.status!=='void'))throw Error('Este juego ya tiene un ganador registrado.');
+    const winner=s.patrols.find(p=>p.id===payload.winner);
+    if(!winner||!eligible(winner,g))throw Error('La patrulla no corresponde a este juego.');
+    const r={id:payload.id,game:g.id,phase:g.phase,label:g.name,entries:[{patrol:winner.id,points:1}],winner:winner.id,official_win:true,status:old?.status==='validated'?'validated':'provisional',version:(old?.version||0)+1,kind:'activity',created_by:old?.created_by||session.name,updated_at:new Date().toISOString(),notes:'',reason:payload.reason||''};
+    if(old)s.results[s.results.indexOf(old)]=r;else s.results.push(r);
   }else if(action==='save_result'){
     const g=s.games.find(g=>g.id===payload.game);const old=s.results.find(r=>r.id===payload.id);
     if(old&&old.version!==payload.version)throw Error('El resultado cambió. Actualiza antes de editar.');
@@ -89,7 +104,7 @@ export async function mutate(action,payload){
     if(payload.entries.some(e=>!Number.isFinite(e.score)||e.score<0||(g.metric==='jury'&&e.score>100)))throw Error('Marcador fuera de rango.');
     const ranking=rankEntries(payload.entries,g);if(ranking.tied&&!payload.winner)throw Error('Hay empate: registra un desempate.');
     const winner=payload.winner||ranking.winner;
-    const r={...payload,entries:allocate(payload.entries,winner,g.bonus),winner,phase:g.phase,official_win:!g.bonus,status:old?.status==='validated'?'validated':'provisional',version:(old?.version||0)+1,created_by:old?.created_by||session.name,updated_at:new Date().toISOString()};
+    const r={...payload,entries:allocate(payload.entries,winner),winner,phase:g.phase,official_win:true,status:old?.status==='validated'?'validated':'provisional',version:(old?.version||0)+1,created_by:old?.created_by||session.name,updated_at:new Date().toISOString()};
     if(old)s.results[s.results.indexOf(old)]=r;else s.results.push(r);
   }else if(action==='result_status'){
     const r=s.results.find(r=>r.id===payload.id);if(r.version!==payload.version)throw Error('El resultado cambió. Actualiza.');r.status=payload.status;r.version++;r.updated_at=new Date().toISOString();
@@ -99,3 +114,4 @@ export async function mutate(action,payload){
   s.logs.unshift({id:crypto.randomUUID(),action,actor:session.name,role:session.role,at:new Date().toISOString(),payload,before:action==='save_result'?before.results.find(r=>r.id===payload.id)||null:action==='score_match'||action==='cancel_tournament'?before.tournaments.find(t=>t.id===payload.id):null});
   localStorage.setItem(demoKey,JSON.stringify(s));return {ok:true};
 }
+

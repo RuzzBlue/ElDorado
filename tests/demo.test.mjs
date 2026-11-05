@@ -28,3 +28,21 @@ test('torneo, pase libre, puntos de campeón y anulación conservan auditoría',
   await api.mutate('create_tournament',{id:'t2',game:'imprenta',name:'QA corregido',participants:ids});
   await assert.rejects(api.mutate('save_result',{id:'direct',game:'imprenta',entries:[{patrol:ids[0],score:1},{patrol:ids[1],score:2}]}),/ya tiene/);
 });
+test('borrar puntajes exige DELETE y conserva patrullas, juegos y bitácora',async()=>{
+  localStorage.clear();api.startDemo();let s=await api.snapshot();const a=s.patrols[0].id;
+  await api.mutate('save_winner',{id:'reset-r',game:'retos',winner:a,version:0});
+  await api.mutate('create_tournament',{id:'reset-t',game:'imprenta',name:'QA reset',participants:s.patrols.slice(0,3).map(p=>p.id)});
+  await assert.rejects(api.mutate('clear_results',{confirm:'delete',reason:'Reinicio de pruebas'}),/DELETE/);
+  await api.mutate('clear_results',{confirm:'DELETE',reason:'Reinicio de pruebas'});
+  s=await api.snapshot();
+  assert.equal(s.results.length,0);assert.equal(s.tournaments.length,0);assert.deepEqual(s.decisions,{});
+  assert.equal(s.closed,false);assert.equal(s.patrols.length,20);assert.equal(s.games.length,36);
+  assert.equal(s.logs[0].action,'clear_results');assert.deepEqual(s.logs[0].before,{results:1,tournaments:1,closed:false});
+});
+test('Super dios puede crear y deshabilitar juegos sin borrarlos',async()=>{
+  localStorage.clear();api.startDemo();
+  await api.mutate('save_game',{id:'especial',name:'Juego especial',phase:'domingo',block:'Módulo 6',time:'14:00',scope:'all',rules:'Elegir un ganador',enabled:true});
+  let s=await api.snapshot();assert.equal(s.games.find(g=>g.id==='especial').enabled,true);
+  await api.mutate('save_game',{...s.games.find(g=>g.id==='especial'),enabled:false});
+  s=await api.snapshot();assert.equal(s.games.find(g=>g.id==='especial').enabled,false);
+});

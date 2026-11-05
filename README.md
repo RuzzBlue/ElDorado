@@ -139,6 +139,14 @@ Las modificaciones manuales conservan todos los campos que no cambies y registra
 - El respaldo JSON contiene datos y registros, pero no contraseñas ni sesiones. No hay importación de respaldo desde la interfaz. Conserva además el proyecto de Supabase hasta concluir el informe.
 - La aplicación muestra como provisionales las posiciones mientras el evento siga abierto. Un empate no se convierte en ganador por orden alfabético.
 
+### Borrar puntajes para pruebas
+
+En **Control**, el botón **Borrar puntajes** permite a Super dios reiniciar rápidamente la aplicación entre pruebas. Elimina todos los resultados, torneos y desempates; conserva patrullas, grupos, juegos, configuración y bitácora. Si el evento estaba cerrado, queda abierto.
+
+La operación pide un motivo y exige escribir **DELETE** para confirmar. También queda registrada en la bitácora con la cantidad de resultados y torneos eliminados. El servidor comprueba nuevamente que la sesión sea de Super dios y que la confirmación sea correcta.
+
+Para una instalación existente, ejecuta `supabase/clear-results.sql` una vez en SQL Editor. Las instalaciones nuevas ya incluyen la función en `schema.sql`.
+
 ## Cambiar contraseñas o revocar accesos
 
 Para rotarlas, vuelve a ejecutar la consulta de credenciales con nuevas claves. Las sesiones abiertas siguen siendo válidas hasta su vencimiento. Para revocarlas en conjunto, ejecuta en SQL Editor:

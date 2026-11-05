@@ -70,11 +70,16 @@ async function manageGame(payload){
   if(!demo)return rpc('camp_manage_game',{p_token:session.token,p_game:payload});
   return mutate('save_game',payload);
 }
+async function kitchenMutate(action,payload){
+  if(!demo)return rpc('camp_kitchen_mutate',{p_token:session.token,p_action:action,p_payload:payload});
+  return mutate(action,payload);
+}
 export async function mutate(action,payload){
   if(action==='clear_results'&&!demo)return rpc('camp_clear_results',{p_token:session.token,p_confirm:payload.confirm,p_reason:payload.reason});
   if(action==='reopen_result'&&!demo)return rpc('camp_reopen_result',{p_token:session.token,p_id:payload.id,p_version:payload.version,p_reason:payload.reason});
   if(action==='save_winner'&&!demo)return recordWinner(payload);
   if(action==='save_game'&&!demo)return manageGame(payload);
+  if(action.startsWith('kitchen_')&&!demo)return kitchenMutate(action,payload);
   if(!demo)return rpc('camp_mutate',{p_token:session.token,p_action:action,p_payload:payload});
   const s=await snapshot();const before=structuredClone(s);const admin=session.role==='admin';
   if(s.closed&&!['set_closed','clear_results'].includes(action))throw Error('El evento está cerrado.');
@@ -82,6 +87,8 @@ export async function mutate(action,payload){
   else if(action==='cancel_tournament'){const t=s.tournaments.find(t=>t.id===payload.id);t.cancelled=true;t.version++;const r=s.results.find(r=>r.id===t.id);if(r){r.status='void';r.version++;}}
   else if(action==='upsert_patrol'){const i=s.patrols.findIndex(p=>p.id===payload.id);const old=s.patrols[i];if(old&&old.troop!==payload.troop&&(s.results.some(r=>r.entries.some(e=>e.patrol===old.id))||s.tournaments.some(t=>t.participants.includes(old.id))))throw Error('No puedes cambiar la tropa de una patrulla con resultados o torneo.');if(s.patrols.some(p=>p.id!==payload.id&&p.name.toLowerCase()===payload.name.toLowerCase()))throw Error('El nombre ya existe.');if(i<0)s.patrols.push(payload);else s.patrols[i]=payload;}
   else if(action==='save_game'){const i=s.games.findIndex(g=>g.id===payload.id);if(i<0)s.games.push({...payload,metric:'higher',bonus:false});else s.games[i]={...s.games[i],...payload,metric:s.games[i].metric||'higher',bonus:false};}
+  else if(action==='kitchen_score'){const values=payload.values||{};if(['presentation','complexity','flavor','teamwork','cleanliness'].some(k=>!Number.isFinite(values[k])||values[k]<1||values[k]>5||Math.round(values[k]*2)!==values[k]*2))throw Error('Cada criterio debe estar entre 1 y 5, en medias estrellas.');const row={patrol:payload.patrol,values,created_by:session.name,updated_at:new Date().toISOString()};const i=(s.kitchen_scores||[]).findIndex(x=>x.patrol===row.patrol);if(i<0)(s.kitchen_scores||=[]).push(row);else s.kitchen_scores[i]=row;}
+  else if(action==='kitchen_finalize'){if(!admin)throw Error('Solo Super dios.');const scores=s.kitchen_scores||[];if(scores.length<s.patrols.length)throw Error('Falta calificar patrullas.');const total=x=>Object.values(x.values).reduce((n,v)=>n+v,0),best=Math.max(...scores.map(total)),leaders=scores.filter(x=>total(x)===best);if(leaders.length>1&&!payload.winner)throw Error('Hay empate: resuélvelo en campo y selecciona al ganador.');const winner=payload.winner||leaders[0].patrol;if(!leaders.some(x=>x.patrol===winner)&&leaders.length>1)throw Error('El ganador debe ser una patrulla empatada.');if(s.results.some(r=>r.game==='cocina-sabado'&&r.status!=='void'))throw Error('Cocina ya tiene ganador.');s.results.push({id:crypto.randomUUID(),game:'cocina-sabado',phase:'sabado',label:'Reto de cocina · sábado',entries:[{patrol:winner,points:1}],winner,official_win:true,status:'provisional',version:1,kind:'activity',created_by:session.name,updated_at:new Date().toISOString(),notes:payload.reason||''});}
   else if(action==='set_closed'){const x=summary(s);if(payload.closed&&(!s.results.some(r=>r.status==='validated')||s.results.some(r=>r.status==='provisional')||s.tournaments.some(t=>!t.cancelled&&!t.rounds.at(-1)[0].winner)||!x.bestTroop||!x.patrolWinner))throw Error('Resuelve pendientes, torneos y desempates antes de cerrar.');s.closed=payload.closed;}
   else if(action==='clear_results'){
     if(session.role!=='admin')throw Error('Solo Super dios tiene este permiso.');
@@ -134,5 +141,6 @@ export async function mutate(action,payload){
   s.logs.unshift({id:crypto.randomUUID(),action,actor:session.name,role:session.role,at:new Date().toISOString(),payload,before:action==='save_result'||action==='reopen_result'?before.results.find(r=>r.id===payload.id)||null:action==='score_match'||action==='cancel_tournament'?before.tournaments.find(t=>t.id===payload.id):action==='clear_results'?{results:before.results.length,tournaments:before.tournaments.length,closed:before.closed}:null});
   localStorage.setItem(demoKey,JSON.stringify(s));return {ok:true};
 }
+
 
 

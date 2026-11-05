@@ -1,0 +1,5 @@
+node_modules/
+test-results/
+*.log
+*.credentials.txt
+update camp_private.credentials.txt

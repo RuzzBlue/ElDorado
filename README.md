@@ -113,7 +113,7 @@ Las escalas globales están fijadas para evitar que distintos evaluadores otorgu
 
 **Dios:** entra con nombre y contraseña de dirigentes, abre **Juegos**, selecciona una actividad y anota el marcador. El resultado queda **Por validar**. Puede corregir resultados provisionales indicando motivo. Un torneo avanza al confirmar cada encuentro.
 
-**Super dios:** revisa resultados, valida o anula con motivo y controla la bitácora. Puede corregir resultados validados. Una corrección de torneo se hace **anulando el torneo completo** y creando otro; los cruces antiguos permanecen registrados. No se modifica a un ganador después de que sus cruces posteriores ya se jugaron.
+**Super dios:** revisa resultados, valida o anula con motivo y controla la bitácora. Puede **reabrir** un resultado validado o anulado, corregir el ganador y validarlo de nuevo. Una corrección de torneo se hace **anulando el torneo completo** y creando otro; los cruces antiguos permanecen registrados. No se modifica a un ganador después de que sus cruces posteriores ya se jugaron.
 
 Después de la última actividad: valida los pendientes, termina o anula los torneos incompletos, revisa igualdad de oportunidades, resuelve empates, exporta el respaldo y cierra la clasificación. Se puede reabrir con motivo. La aplicación no sabe si se jugó una actividad no registrada: comprobar cobertura y oportunidades sigue siendo tarea de organización.
 
@@ -146,6 +146,14 @@ En **Control**, el botón **Borrar puntajes** permite a Super dios reiniciar rá
 La operación pide un motivo y exige escribir **DELETE** para confirmar. También queda registrada en la bitácora con la cantidad de resultados y torneos eliminados. El servidor comprueba nuevamente que la sesión sea de Super dios y que la confirmación sea correcta.
 
 Para una instalación existente, ejecuta `supabase/clear-results.sql` una vez en SQL Editor. Las instalaciones nuevas ya incluyen la función en `schema.sql`.
+
+### Reabrir resultados
+
+Solo Super dios puede reabrir un resultado **validado** o **anulado**. El botón **Reabrir** está en **Ganadores registrados**, pide un motivo y deja el resultado en **Por validar**. Después se puede usar **Corregir** para cambiar el ganador, **Validar** para confirmarlo o **Anular** de nuevo.
+
+La operación incrementa la versión del resultado, impide sobrescribir cambios simultáneos, limpia los desempates manuales y queda en la bitácora con el estado anterior. Si el evento está cerrado, primero hay que reabrirlo desde **Control**. Los resultados de torneo no se reabren desde aquí: el torneo completo se anula y se crea otro.
+
+Para una instalación existente, ejecuta `supabase/reopen-results.sql` una vez en SQL Editor. Las instalaciones nuevas ya incluyen la función en `schema.sql`.
 
 ## Cambiar contraseñas o revocar accesos
 

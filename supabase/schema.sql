@@ -110,6 +110,30 @@ begin
   insert into camp_private.audit(actor,role,action,payload,before,after) values(s.name,s.role,'clear_results',jsonb_build_object('reason',trim(p_reason)),before_data,after_data);
   return jsonb_build_object('ok',true,'cleared',before_data);
 end $$;
+
+-- Super dios puede reabrir un resultado validado o anulado para corregirlo.
+-- Deja el resultado en provisional; después se corrige el ganador y se valida.
+create function public.camp_reopen_result(p_token text,p_id text,p_version integer,p_reason text) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare s camp_private.sessions; d jsonb; old jsonb; item jsonb; ix integer;
+begin
+  s=camp_private.session_for(p_token);
+  if s.role<>'admin' then raise exception 'Solo Super dios tiene este permiso.';end if;
+  if coalesce(length(trim(p_reason)),0)<5 then raise exception 'Indica el motivo para reabrir.';end if;
+  select data into d from camp_private.event where id=1 for update;
+  if coalesce((d->>'closed')::boolean,false) then raise exception 'El evento está cerrado. Reábrelo antes de corregir resultados.';end if;
+  select value,ordinality::int-1 into old,ix from jsonb_array_elements(d->'results') with ordinality where value->>'id'=p_id;
+  if old is null then raise exception 'El resultado no existe.';end if;
+  if old->>'kind'='tournament' then raise exception 'Los torneos se corrigen desde la vista del torneo.';end if;
+  if coalesce(old->>'status','') not in ('validated','void') then raise exception 'Solo se pueden reabrir resultados validados o anulados.';end if;
+  if (old->>'version')::integer is distinct from p_version then raise exception 'El resultado cambió. Actualiza antes de reabrir.';end if;
+  item=old||jsonb_build_object('status','provisional','version',(old->>'version')::integer+1,'reason',left(trim(p_reason),500),'updated_at',now());
+  d=jsonb_set(d,array['results',ix::text],item);
+  d=jsonb_set(d,'{decisions}','{}');
+  update camp_private.event set data=d where id=1;
+  insert into camp_private.audit(actor,role,action,payload,before,after) values(s.name,s.role,'reopen_result',jsonb_build_object('id',p_id,'reason',trim(p_reason)),old,item);
+  return '{"ok":true}';
+end $$;
 revoke all on function camp_private.session_for(text) from public,anon,authenticated;
 
 create function public.camp_login(p_name text,p_password text) returns jsonb
@@ -354,6 +378,7 @@ revoke all on function public.camp_mutate(text,text,jsonb) from public;
 revoke all on function public.camp_record_winner(text,text,text,text,integer,text) from public;
 revoke all on function public.camp_manage_game(text,jsonb) from public;
 revoke all on function public.camp_clear_results(text,text,text) from public;
+revoke all on function public.camp_reopen_result(text,text,integer,text) from public;
 grant execute on function public.camp_login(text,text) to anon,authenticated;
 grant execute on function public.camp_logout(text) to anon,authenticated;
 grant execute on function public.camp_snapshot(text) to anon,authenticated;
@@ -361,4 +386,5 @@ grant execute on function public.camp_mutate(text,text,jsonb) to anon,authentica
 grant execute on function public.camp_record_winner(text,text,text,text,integer,text) to anon,authenticated;
 grant execute on function public.camp_manage_game(text,jsonb) to anon,authenticated;
 grant execute on function public.camp_clear_results(text,text,text) to anon,authenticated;
+grant execute on function public.camp_reopen_result(text,text,integer,text) to anon,authenticated;
 commit;

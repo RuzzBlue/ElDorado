@@ -72,6 +72,7 @@ async function manageGame(payload){
 }
 export async function mutate(action,payload){
   if(action==='clear_results'&&!demo)return rpc('camp_clear_results',{p_token:session.token,p_confirm:payload.confirm,p_reason:payload.reason});
+  if(action==='reopen_result'&&!demo)return rpc('camp_reopen_result',{p_token:session.token,p_id:payload.id,p_version:payload.version,p_reason:payload.reason});
   if(action==='save_winner'&&!demo)return recordWinner(payload);
   if(action==='save_game'&&!demo)return manageGame(payload);
   if(!demo)return rpc('camp_mutate',{p_token:session.token,p_action:action,p_payload:payload});
@@ -96,6 +97,15 @@ export async function mutate(action,payload){
     const t=s.tournaments.find(t=>t.id===payload.id);if(t.cancelled||t.version!==payload.version)throw Error('Otro dirigente actualizó este torneo. Actualiza.');
     const g=s.games.find(g=>g.id===t.game);scoreBracket(t,payload.round,payload.index,payload.a,payload.b,g.metric);t.version++;
     const final=t.rounds.at(-1)[0];if(final.winner){const entries=t.participants.map(p=>({patrol:p,score:0,points:p===final.winner?3:[final.a,final.b].includes(p)?2:1}));s.results.push({id:t.id,game:g.id,phase:g.phase,label:t.name,entries,winner:final.winner,official_win:!g.bonus,status:'provisional',version:1,kind:'tournament',created_by:session.name,updated_at:new Date().toISOString()});}
+  }else if(action==='reopen_result'){
+    if(session.role!=='admin')throw Error('Solo Super dios tiene este permiso.');
+    const r=s.results.find(r=>r.id===payload.id);
+    if(!r)throw Error('El resultado no existe.');
+    if(r.kind==='tournament')throw Error('Los torneos se corrigen desde la vista del torneo.');
+    if(r.status!=='validated'&&r.status!=='void')throw Error('Solo se pueden reabrir resultados validados o anulados.');
+    if(r.version!==payload.version)throw Error('El resultado cambió. Actualiza antes de reabrir.');
+    if(String(payload.reason||'').trim().length<5)throw Error('Indica el motivo para reabrir.');
+    r.status='provisional';r.version++;r.reason=payload.reason;r.updated_at=new Date().toISOString();
   }else if(action==='save_winner'){
     const g=s.games.find(g=>g.id===payload.game);const old=s.results.find(r=>r.id===payload.id);
     if(!g)throw Error('Juego no disponible.');
@@ -121,7 +131,7 @@ export async function mutate(action,payload){
   }else throw Error('Acción desconocida.');
   // Toda modificación competitiva invalida decisiones de desempate anteriores.
   if(!['set_decision','set_closed'].includes(action))s.decisions={};
-  s.logs.unshift({id:crypto.randomUUID(),action,actor:session.name,role:session.role,at:new Date().toISOString(),payload,before:action==='save_result'?before.results.find(r=>r.id===payload.id)||null:action==='score_match'||action==='cancel_tournament'?before.tournaments.find(t=>t.id===payload.id):action==='clear_results'?{results:before.results.length,tournaments:before.tournaments.length,closed:before.closed}:null});
+  s.logs.unshift({id:crypto.randomUUID(),action,actor:session.name,role:session.role,at:new Date().toISOString(),payload,before:action==='save_result'||action==='reopen_result'?before.results.find(r=>r.id===payload.id)||null:action==='score_match'||action==='cancel_tournament'?before.tournaments.find(t=>t.id===payload.id):action==='clear_results'?{results:before.results.length,tournaments:before.tournaments.length,closed:before.closed}:null});
   localStorage.setItem(demoKey,JSON.stringify(s));return {ok:true};
 }
 

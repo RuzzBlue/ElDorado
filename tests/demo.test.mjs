@@ -25,6 +25,7 @@ test('torneo, pase libre, puntos de campeón y anulación conservan auditoría',
   let next=await api.snapshot();assert.equal(next.results.length,1);assert.equal(next.results[0].winner,ids[1]);assert.deepEqual(next.results[0].entries.map(e=>e.points),[2,3,1]);
   await api.mutate('cancel_tournament',{id:'t',version:3,reason:'Rehacer por error QA'});
   next=await api.snapshot();assert.equal(next.results[0].status,'void');assert.equal(next.tournaments[0].cancelled,true);assert.equal(next.logs.length,4);
+  await assert.rejects(api.mutate('reopen_result',{id:'t',version:2,reason:'Reabrir torneo QA'}),/torneo/);
   await api.mutate('create_tournament',{id:'t2',game:'imprenta',name:'QA corregido',participants:ids});
   await assert.rejects(api.mutate('save_result',{id:'direct',game:'imprenta',entries:[{patrol:ids[0],score:1},{patrol:ids[1],score:2}]}),/ya tiene/);
 });
@@ -38,6 +39,31 @@ test('borrar puntajes exige DELETE y conserva patrullas, juegos y bitácora',asy
   assert.equal(s.results.length,0);assert.equal(s.tournaments.length,0);assert.deepEqual(s.decisions,{});
   assert.equal(s.closed,false);assert.equal(s.patrols.length,20);assert.equal(s.games.length,36);
   assert.equal(s.logs[0].action,'clear_results');assert.deepEqual(s.logs[0].before,{results:1,tournaments:1,closed:false});
+});
+test('Super dios reabre resultados validados y anulados para corregirlos',async()=>{
+  localStorage.clear();api.startDemo();let s=await api.snapshot();const a=s.patrols[0].id,b=s.patrols[1].id;
+  await api.mutate('save_winner',{id:'reopen-r',game:'retos',winner:a,version:0});
+  await api.mutate('result_status',{id:'reopen-r',version:1,status:'validated',reason:'Revisado QA'});
+
+  await assert.rejects(api.mutate('reopen_result',{id:'reopen-r',version:2,reason:'x'}),/motivo/);
+  await assert.rejects(api.mutate('reopen_result',{id:'reopen-r',version:1,reason:'Corrección QA'}),/cambió/);
+  await api.mutate('reopen_result',{id:'reopen-r',version:2,reason:'Corrección QA'});
+  s=await api.snapshot();
+  assert.equal(s.results[0].status,'provisional');assert.equal(s.results[0].version,3);
+  assert.equal(s.results[0].reason,'Corrección QA');assert.equal(standings(s).reduce((n,p)=>n+p.wins,0),0);
+  assert.equal(s.logs[0].action,'reopen_result');assert.equal(s.logs[0].before.status,'validated');
+
+  await assert.rejects(api.mutate('reopen_result',{id:'reopen-r',version:3,reason:'Otra revisión'}),/validados o anulados/);
+  await api.mutate('save_winner',{id:'reopen-r',game:'retos',winner:b,version:3,reason:'Ganador corregido'});
+  await api.mutate('result_status',{id:'reopen-r',version:4,status:'validated',reason:'Validación corregida'});
+  s=await api.snapshot();assert.equal(s.results[0].winner,b);assert.equal(standings(s)[0].id,b);
+
+  await api.mutate('result_status',{id:'reopen-r',version:5,status:'void',reason:'Anulación QA'});
+  await api.mutate('reopen_result',{id:'reopen-r',version:6,reason:'Revisión de anulación'});
+  s=await api.snapshot();assert.equal(s.results[0].status,'provisional');assert.equal(s.logs[0].before.status,'void');
+  await api.mutate('save_winner',{id:'reopen-r',game:'retos',winner:a,version:7,reason:'Restituir ganador'});
+  await api.mutate('result_status',{id:'reopen-r',version:8,status:'validated',reason:'Validación final'});
+  s=await api.snapshot();assert.equal(s.results[0].winner,a);assert.equal(standings(s)[0].id,a);
 });
 test('Super dios puede crear y deshabilitar juegos sin borrarlos',async()=>{
   localStorage.clear();api.startDemo();

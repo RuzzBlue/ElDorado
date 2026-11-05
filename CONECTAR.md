@@ -13,6 +13,7 @@ En consultas nuevas, ejecuta estos archivos en este orden:
 3. `supabase/optimize-sync.sql`: reduce las descargas cuando no hay cambios, para cuidar el consumo del plan gratuito. Si ya ejecutaste los dos anteriores, ejecuta solo este y la prueba siguiente.
 4. `supabase/smoke-test.sql`: prueba automática de la integración. Revierte los datos de prueba; el SQL Editor debe indicar que terminó correctamente. Si aparece un error, copia su mensaje para corregirlo antes de usar la aplicación.
 5. Si actualizas una instalación existente y quieres habilitar **Borrar puntajes** en Control, ejecuta `supabase/clear-results.sql`. No borra datos por sí mismo; solo crea la función que usa el botón.
+6. Para habilitar **Reabrir** resultados validados o anulados en una instalación existente, ejecuta `supabase/reopen-results.sql`. Tampoco modifica datos por sí mismo.
 
 ## 2 Elegir las dos contraseñas de entrada
 

@@ -3,15 +3,15 @@ begin;
 
 create or replace function public.camp_kitchen_mutate(p_token text,p_action text,p_payload jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $$
-declare s camp_private.sessions; d jsonb; old jsonb; row jsonb; ix integer; p text; values jsonb; k text; n numeric; scores jsonb; best numeric; leaders text[]; winner text; result jsonb;
+declare s camp_private.sessions; d jsonb; old jsonb; row jsonb; ix integer; p text; values jsonb; criterion text; n numeric; scores jsonb; best numeric; leaders text[]; winner text; result jsonb;
 begin
   s=camp_private.session_for(p_token);
   select data into d from camp_private.event where id=1 for update;
   if coalesce((d->>'closed')::boolean,false) then raise exception 'El evento está cerrado.';end if;
   if p_action='kitchen_score' then
     p=p_payload->>'patrol'; values=p_payload->'values';
-    if not exists(select 1 from jsonb_array_elements(d->'patrols') x where x->>'id'=p) or jsonb_typeof(values)<>'object' or exists(select 1 from unnest(array['presentation','complexity','flavor','teamwork','cleanliness']) k where not (values ? k)) then raise exception 'Calificación inválida.';end if;
-    foreach k in array array['presentation','complexity','flavor','teamwork','cleanliness'] loop n=(values->>k)::numeric;if n<1 or n>5 or n*2<>trunc(n*2) then raise exception 'Cada criterio debe estar entre 1 y 5, en medias estrellas.';end if;end loop;
+    if not exists(select 1 from jsonb_array_elements(d->'patrols') x where x->>'id'=p) or jsonb_typeof(values)<>'object' or exists(select 1 from unnest(array['presentation','complexity','flavor','teamwork','cleanliness']) as required_key where not (values ? required_key)) then raise exception 'Calificación inválida.';end if;
+    foreach criterion in array array['presentation','complexity','flavor','teamwork','cleanliness'] loop n=(values->>criterion)::numeric;if n<1 or n>5 or n*2<>trunc(n*2) then raise exception 'Cada criterio debe estar entre 1 y 5, en medias estrellas.';end if;end loop;
     select value,ordinality::integer-1 into old,ix from jsonb_array_elements(coalesce(d->'kitchen_scores','[]')) with ordinality where value->>'patrol'=p;
     row=jsonb_build_object('patrol',p,'values',values,'created_by',s.name,'updated_at',now());
     if old is null then d=jsonb_set(d,'{kitchen_scores}',coalesce(d->'kitchen_scores','[]')||jsonb_build_array(row));else d=jsonb_set(d,array['kitchen_scores',ix::text],row);end if;
@@ -32,4 +32,5 @@ end $$;
 revoke all on function public.camp_kitchen_mutate(text,text,jsonb) from public;
 grant execute on function public.camp_kitchen_mutate(text,text,jsonb) to anon,authenticated;
 commit;
+
 

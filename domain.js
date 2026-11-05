@@ -79,7 +79,7 @@ export function summary(state){
   const patrolWinner=tiedPatrols.length===1?tiedPatrols[0]:tiedPatrols.find(p=>p.id===decisions.patrol?.winner)||null;
   return {rows,troops,alliances,leaders,winning,bestTroop:winning?leaders[winning.id]:null,patrolTie:tiedPatrols.length>1&&!patrolWinner,patrolWinner,tiedPatrols};
 }
-export function demoState(){return {patrols:TROOPS.flatMap((t,i)=>['Cóndores','Lobos','Pumas','Halcones','Jaguares'].map((n,j)=>({id:`${t.id}-${j+1}`,name:`${n} ${i+1}`,troop:t.id,group:'Grupo de ejemplo',members:6}))),games:structuredClone(GAMES),results:[],tournaments:[],logs:[],closed:false};}
+export function demoState(){return {patrols:TROOPS.flatMap((t,i)=>['Cóndores','Lobos','Pumas','Halcones','Jaguares'].map((n,j)=>({id:`${t.id}-${j+1}`,name:`${n} ${i+1}`,troop:t.id,group:'Grupo de ejemplo',members:6}))),games:structuredClone(GAMES),results:[],tournaments:[],kitchen_scores:[],logs:[],closed:false};}
 export function makeBracket(ids){
   let size=2;while(size<ids.length)size*=2;
   const rounds=[];let pairs=[];
@@ -97,5 +97,6 @@ export function scoreBracket(t,round,index,a,b,metric){
 }
 // Cada juego tiene un único ganador: una victoria equivale a un punto.
 export function allocate(entries,winner){return entries.map(e=>({...e,points:e.patrol===winner?1:0}));}
+
 
 

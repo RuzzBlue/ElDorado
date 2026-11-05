@@ -65,6 +65,20 @@ test('Super dios reabre resultados validados y anulados para corregirlos',async(
   await api.mutate('result_status',{id:'reopen-r',version:8,status:'validated',reason:'Validación final'});
   s=await api.snapshot();assert.equal(s.results[0].winner,a);assert.equal(standings(s)[0].id,a);
 });
+test('Super dios valida varios resultados a la vez con comentario',async()=>{
+  localStorage.clear();api.startDemo();const s=await api.snapshot();const a=s.patrols[0].id,b=s.patrols[1].id;
+  await api.mutate('save_winner',{id:'bulk-1',game:'retos',winner:a,version:0});
+  await api.mutate('save_winner',{id:'bulk-2',game:'jet',winner:b,version:0});
+  await assert.rejects(api.mutate('validate_results',{items:[],actor:'Bryan Ruz'}),/Selecciona/);
+  await assert.rejects(api.mutate('validate_results',{items:[{id:'bulk-1',version:0},{id:'bulk-2',version:1}],actor:'Bryan Ruz'}),/cambió/);
+  let after=await api.snapshot();assert.ok(after.results.every(r=>r.status==='provisional'));
+  await api.mutate('validate_results',{items:[{id:'bulk-1',version:1},{id:'bulk-2',version:1}],actor:'Bryan Ruz'});
+  after=await api.snapshot();
+  assert.ok(after.results.every(r=>r.status==='validated'&&r.reason==='Validado por Bryan Ruz'&&r.version===2));
+  assert.equal(after.logs[0].action,'validate_results');assert.equal(after.logs[0].before.length,2);
+  assert.equal(standings(after).find(p=>p.id===a).wins,1);assert.equal(standings(after).find(p=>p.id===b).wins,1);
+  await assert.rejects(api.mutate('validate_results',{items:[{id:'bulk-1',version:2}],actor:'Bryan Ruz'}),/pendiente/);
+});
 test('Super dios puede crear y deshabilitar juegos sin borrarlos',async()=>{
   localStorage.clear();api.startDemo();
   await api.mutate('save_game',{id:'especial',name:'Juego especial',phase:'domingo',block:'Módulo 6',time:'14:00',scope:'all',rules:'Elegir un ganador',enabled:true});

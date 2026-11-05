@@ -111,9 +111,9 @@ Las escalas globales están fijadas para evitar que distintos evaluadores otorgu
 
 ### Jornada de evaluación
 
-**Dios:** entra con nombre y contraseña de dirigentes, abre **Juegos**, selecciona una actividad y anota el marcador. El resultado queda **Por validar**. Puede corregir resultados provisionales indicando motivo. Un torneo avanza al confirmar cada encuentro.
+**Dios:** entra con nombre y contraseña de dirigentes, abre **Juegos**, selecciona una actividad y anota el marcador. El resultado queda **Por validar**. Un torneo avanza al confirmar cada encuentro. La pestaña **Resultados** no está disponible para este acceso: solo Super dios revisa, corrige, valida o anula.
 
-**Super dios:** revisa resultados, valida o anula con motivo y controla la bitácora. Puede **reabrir** un resultado validado o anulado, corregir el ganador y validarlo de nuevo. Una corrección de torneo se hace **anulando el torneo completo** y creando otro; los cruces antiguos permanecen registrados. No se modifica a un ganador después de que sus cruces posteriores ya se jugaron.
+**Super dios:** revisa resultados, valida o anula con motivo y controla la bitácora. Puede **validar varios pendientes a la vez** y **reabrir** un resultado validado o anulado, corregir el ganador y validarlo de nuevo. Una corrección de torneo se hace **anulando el torneo completo** y creando otro; los cruces antiguos permanecen registrados. No se modifica a un ganador después de que sus cruces posteriores ya se jugaron.
 
 Después de la última actividad: valida los pendientes, termina o anula los torneos incompletos, revisa igualdad de oportunidades, resuelve empates, exporta el respaldo y cierra la clasificación. Se puede reabrir con motivo. La aplicación no sabe si se jugó una actividad no registrada: comprobar cobertura y oportunidades sigue siendo tarea de organización.
 
@@ -154,6 +154,16 @@ Solo Super dios puede reabrir un resultado **validado** o **anulado**. El botón
 La operación incrementa la versión del resultado, impide sobrescribir cambios simultáneos, limpia los desempates manuales y queda en la bitácora con el estado anterior. Si el evento está cerrado, primero hay que reabrirlo desde **Control**. Los resultados de torneo no se reabren desde aquí: el torneo completo se anula y se crea otro.
 
 Para una instalación existente, ejecuta `supabase/reopen-results.sql` una vez en SQL Editor. Las instalaciones nuevas ya incluyen la función en `schema.sql`.
+
+### Validación masiva
+
+En **Ganadores registrados**, junto a los filtros, el botón **Validar todo** abre una revisión de todos los resultados **Por validar**. La lista es desplazable y cada fila muestra la actividad, el módulo, el día, el tipo, el ganador y los puntos que se asignarían a cada patrulla.
+
+Se puede filtrar por **módulo, día, tipo, alcance de tropa, patrulla afectada, grupo afectado** o con una búsqueda personalizada. Los filtros solo cambian lo que se muestra; la selección se conserva y el resumen indica cuántos resultados y puntos se van a asignar. **Seleccionar visibles** marca la lista filtrada y **Limpiar** quita toda la selección.
+
+Antes de confirmar se escribe el **nombre de quien valida**. Ese nombre se guarda como comentario `Validado por …` en cada resultado y queda en la bitácora. La validación es conjunta: si otro dirigente modificó uno de los seleccionados, no se valida ninguno y se pide actualizar. Solo Super dios puede abrir esta pantalla y el servidor vuelve a comprobar el rol.
+
+Para una instalación existente, ejecuta `supabase/bulk-validate.sql` una vez en SQL Editor. Las instalaciones nuevas ya incluyen la función en `schema.sql`.
 
 ## Cambiar contraseñas o revocar accesos
 

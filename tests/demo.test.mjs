@@ -37,7 +37,7 @@ test('borrar puntajes exige DELETE y conserva patrullas, juegos y bitácora',asy
   await api.mutate('clear_results',{confirm:'DELETE',reason:'Reinicio de pruebas'});
   s=await api.snapshot();
   assert.equal(s.results.length,0);assert.equal(s.tournaments.length,0);assert.deepEqual(s.decisions,{});
-  assert.equal(s.closed,false);assert.equal(s.patrols.length,20);assert.equal(s.games.length,36);
+  assert.equal(s.closed,false);assert.equal(s.patrols.length,20);assert.equal(s.games.length,39);
   assert.equal(s.logs[0].action,'clear_results');assert.deepEqual(s.logs[0].before,{results:1,tournaments:1,kitchen_scores:0,closed:false});
 });
 test('cocina guarda evaluaciones separadas por comida y el reinicio borra sus estrellas',async()=>{

@@ -26,11 +26,13 @@ const raw = [
 ['lineas3','Líneas superpuestas','sabado','Módulo 3','21:50','europeos','lower','Segundos para completar correctamente.'],
 ['acecho3','Acecho','sabado','Módulo 3','21:50','europeos','higher','Llegadas válidas en tiempo fijo.'],
 ['bandas3','Batalla de las bandas','sabado','Módulo 3','22:20','europeos','jury','Coordinación 40, participación 40, consigna 20. Bonificación, sin victoria oficial.'],
+['barras3','¿Quién canta más?','sabado','Módulo 3','22:20','europeos','higher','Reto extra de Batalla de las Bandas. Elegir una única patrulla ganadora por sus barras.'],
 ['lineas4','Líneas superpuestas','sabado','Módulo 4','21:20','muiscas','lower','Segundos para completar correctamente.'],
 ['acecho4','Acecho','sabado','Módulo 4','21:20','muiscas','higher','Llegadas válidas en tiempo fijo.'],
 ['conejos4','Conejos, Naipes y UNO','sabado','Módulo 4','21:50','muiscas','higher','Nudos obtenidos.'],
 ['arana1-4','ArañaCross 1','sabado','Módulo 4','21:50','muiscas','higher','Participantes que pasan válidamente. Igual cantidad de intentos.'],
 ['bandas4','Batalla de las bandas','sabado','Módulo 4','22:20','muiscas','jury','Coordinación 40, participación 40, consigna 20. Bonificación, sin victoria oficial.'],
+['barras4','¿Quién canta más?','sabado','Módulo 4','22:20','muiscas','higher','Reto extra de Batalla de las Bandas. Elegir una única patrulla ganadora por sus barras.'],
 ['pesca','Pesca2','domingo','Módulo 5','10:10','all','higher','Suma de peces de las tres rondas. Mercado.'],
 ['pictionary','Ultrapictionary','domingo','Módulo 5','10:34','all','higher','Dibujos adivinados. Mercado.'],
 ['escudeiros','Escudeiros','domingo','Módulo 5','10:58','all','lower','Segundos totales incluyendo penalizaciones reglamentadas. Portón.'],
@@ -44,6 +46,7 @@ const raw = [
 ['borrachos','Borrachos mojados','domingo','Módulo 6','13:25 / 13:55','all','higher','Agua acumulada en mililitros. Registrar cada patrulla por separado.'],
 ['alunizaje','Alunizaje forzado','domingo','Módulo 6','13:25 / 13:55','all','higher','Pelotas recogidas válidamente.'],
 ['bandas6','Batalla de las bandas final','domingo','Módulo 6','14:25','all','jury','Coordinación 40, participación 40, consigna 20. Bonificación, sin victoria oficial.'],
+['barras6','¿Quién canta más?','domingo','Módulo 6','14:25','all','higher','Reto extra de Batalla de las Bandas. Elegir una única patrulla ganadora por sus barras.'],
 ];
 export const GAMES=raw.map(([id,name,phase,block,time,scope,metric,rules])=>({id,name,phase,block,time,scope,metric,rules,bonus:false,enabled:true}));
 export const troop = id => TROOPS.find(t=>t.id===id);

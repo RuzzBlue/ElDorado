@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {standings} from '../domain.js';
+import {standings,summary} from '../domain.js';
 const storage=()=>{const values=new Map();return {getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k),clear:()=>values.clear()};};
 globalThis.window={CADIPAS_CONFIG:{}};globalThis.sessionStorage=storage();globalThis.localStorage=storage();
 const api=await import('../api.js');
@@ -49,6 +49,15 @@ test('cocina guarda evaluaciones separadas por comida y el reinicio borra sus es
   s=await api.snapshot();assert.equal(s.kitchen_scores.length,3);assert.equal(s.kitchen_scores.filter(x=>x.meal==='almuerzo').length,2);
   await api.mutate('clear_results',{confirm:'DELETE',reason:'Reinicio de cocina'});
   s=await api.snapshot();assert.deepEqual(s.kitchen_scores,[]);
+});
+test('ajustes manuales cambian solo la clasificación indicada y quedan como resultado',async()=>{
+  localStorage.clear();api.startDemo();let s=await api.snapshot(),p=s.patrols[0];
+  await api.mutate('adjust_points',{target_type:'patrol',target:p.id,amount:2,reason:'Desempate de patrulla'});
+  s=await api.snapshot();assert.equal(standings(s).find(x=>x.id===p.id).points,2);assert.equal(s.results[0].kind,'adjustment');
+  await api.mutate('adjust_points',{target_type:'troop',target:p.troop,amount:3,reason:'Desempate de tropa'});
+  s=await api.snapshot();assert.equal(summary(s).troops.find(x=>x.id===p.troop).points,3);
+  await api.mutate('adjust_points',{target_type:'alliance',target:'europeos',amount:-1,reason:'Penalización aplicada'});
+  s=await api.snapshot();assert.equal(summary(s).alliances.find(x=>x.id==='europeos').points,-1);
 });
 test('Super dios reabre resultados validados y anulados para corregirlos',async()=>{
   localStorage.clear();api.startDemo();let s=await api.snapshot();const a=s.patrols[0].id,b=s.patrols[1].id;

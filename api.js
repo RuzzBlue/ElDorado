@@ -75,6 +75,7 @@ async function kitchenMutate(action,payload){
   return mutate(action,payload);
 }
 export async function mutate(action,payload){
+  if(action==='adjust_points'&&!demo)return rpc('camp_adjust_points',{p_token:session.token,p_payload:payload});
   if(action==='clear_results'&&!demo)return rpc('camp_clear_results',{p_token:session.token,p_confirm:payload.confirm,p_reason:payload.reason});
   if(action==='validate_results'&&!demo)return rpc('camp_validate_results',{p_token:session.token,p_items:payload.items,p_actor:payload.actor});
   if(action==='reopen_result'&&!demo)return rpc('camp_reopen_result',{p_token:session.token,p_id:payload.id,p_version:payload.version,p_reason:payload.reason});
@@ -84,7 +85,13 @@ export async function mutate(action,payload){
   if(!demo)return rpc('camp_mutate',{p_token:session.token,p_action:action,p_payload:payload});
   const s=await snapshot();const before=structuredClone(s);const admin=session.role==='admin';
   if(s.closed&&!['set_closed','clear_results'].includes(action))throw Error('El evento está cerrado.');
-  if(action==='set_decision'){s.decisions={...(s.decisions||{}),[payload.type]:{winner:payload.winner,reason:payload.reason}};}
+  if(action==='adjust_points'){
+    if(!admin)throw Error('Solo Super dios.');
+    const amount=Number(payload.amount),type=payload.target_type;
+    if(!['patrol','troop','alliance'].includes(type)||!Number.isInteger(amount)||amount===0||Math.abs(amount)>1000||String(payload.reason||'').trim().length<5)throw Error('Revisa el ajuste y su motivo.');
+    s.results.push({id:crypto.randomUUID(),game:`adjustment-${type}`,phase:'adjustment',label:`Ajuste de ${type==='patrol'?'patrulla':type==='troop'?'tropa':'alianza'}`,entries:[],winner:null,official_win:false,status:'validated',version:1,kind:'adjustment',adjustment_target_type:type,adjustment_target:payload.target,adjustment_amount:amount,created_by:session.name,updated_at:new Date().toISOString(),notes:payload.reason});
+  }
+  else if(action==='set_decision'){s.decisions={...(s.decisions||{}),[payload.type]:{winner:payload.winner,reason:payload.reason}};}
   else if(action==='cancel_tournament'){const t=s.tournaments.find(t=>t.id===payload.id);t.cancelled=true;t.version++;const r=s.results.find(r=>r.id===t.id);if(r){r.status='void';r.version++;}}
   else if(action==='upsert_patrol'){const i=s.patrols.findIndex(p=>p.id===payload.id);const old=s.patrols[i];if(old&&old.troop!==payload.troop&&(s.results.some(r=>r.entries.some(e=>e.patrol===old.id))||s.tournaments.some(t=>t.participants.includes(old.id))))throw Error('No puedes cambiar la tropa de una patrulla con resultados o torneo.');if(s.patrols.some(p=>p.id!==payload.id&&p.name.toLowerCase()===payload.name.toLowerCase()))throw Error('El nombre ya existe.');if(i<0)s.patrols.push(payload);else s.patrols[i]=payload;}
   else if(action==='save_game'){const i=s.games.findIndex(g=>g.id===payload.id);if(i<0)s.games.push({...payload,metric:'higher',bonus:false});else s.games[i]={...s.games[i],...payload,metric:s.games[i].metric||'higher',bonus:false};}

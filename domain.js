@@ -62,7 +62,11 @@ export function standings(state){
   const byId=Object.fromEntries(rows.map(p=>[p.id,p]));
   const games=Object.fromEntries(state.games.map(g=>[g.id,g]));
   for(const r of state.results){
-    if(r.status==='void'||games[r.game]?.enabled===false)continue;
+    if(r.status==='void'||(r.kind!=='adjustment'&&games[r.game]?.enabled===false))continue;
+    if(r.kind==='adjustment'){
+      if(r.status==='validated'&&r.adjustment_target_type==='patrol'&&byId[r.adjustment_target])byId[r.adjustment_target].points+=Number(r.adjustment_amount||0);
+      continue;
+    }
     for(const e of r.entries){const p=byId[e.patrol];if(!p)continue;if(r.status!=='validated'){p.provisional++;continue;}
       p.played++;p.points+=Number(e.points||0);if(r.official_win&&r.winner===p.id)p.wins++;
       if(r.phase==='domingo')p.sunday+=Number(e.points||0);else p.saturday+=Number(e.points||0);
@@ -74,6 +78,14 @@ export function summary(state){
   const rows=standings(state);
   const troops=TROOPS.map(t=>({...t,points:rows.filter(p=>p.troop===t.id).reduce((n,p)=>n+p.saturday,0)}));
   const alliances=['europeos','muiscas'].map(id=>({id,name:id==='europeos'?'Europeos':'Muiscas',points:rows.filter(p=>troop(p.troop)?.alliance===id).reduce((n,p)=>n+p.sunday,0)}));
+  for(const r of state.results)if(r.status==='validated'&&r.kind==='adjustment'){
+    const amount=Number(r.adjustment_amount||0);
+    if(r.adjustment_target_type==='troop'){
+      const t=troops.find(x=>x.id===r.adjustment_target);if(t)t.points+=amount;
+    }else if(r.adjustment_target_type==='alliance'){
+      const a=alliances.find(x=>x.id===r.adjustment_target);if(a)a.points+=amount;
+    }
+  }
   const sorted=[...alliances].sort((a,b)=>b.points-a.points);
   const decisions=state.decisions||{};
   const winning=sorted[0].points>sorted[1].points?sorted[0]:alliances.find(a=>a.id===decisions.alliance?.winner)||null;

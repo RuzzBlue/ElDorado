@@ -38,7 +38,17 @@ test('borrar puntajes exige DELETE y conserva patrullas, juegos y bitácora',asy
   s=await api.snapshot();
   assert.equal(s.results.length,0);assert.equal(s.tournaments.length,0);assert.deepEqual(s.decisions,{});
   assert.equal(s.closed,false);assert.equal(s.patrols.length,20);assert.equal(s.games.length,36);
-  assert.equal(s.logs[0].action,'clear_results');assert.deepEqual(s.logs[0].before,{results:1,tournaments:1,closed:false});
+  assert.equal(s.logs[0].action,'clear_results');assert.deepEqual(s.logs[0].before,{results:1,tournaments:1,kitchen_scores:0,closed:false});
+});
+test('cocina guarda evaluaciones separadas por comida y el reinicio borra sus estrellas',async()=>{
+  localStorage.clear();api.startDemo();let s=await api.snapshot(),a=s.patrols[0].id,b=s.patrols[1].id;
+  const values={presentation:5,complexity:4.5,flavor:5,teamwork:4,cleanliness:5};
+  await api.mutate('kitchen_score',{patrol:a,meal:'almuerzo',values});
+  await api.mutate('kitchen_score',{patrol:a,meal:'cena',values});
+  await api.mutate('kitchen_score',{patrol:b,meal:'almuerzo',values});
+  s=await api.snapshot();assert.equal(s.kitchen_scores.length,3);assert.equal(s.kitchen_scores.filter(x=>x.meal==='almuerzo').length,2);
+  await api.mutate('clear_results',{confirm:'DELETE',reason:'Reinicio de cocina'});
+  s=await api.snapshot();assert.deepEqual(s.kitchen_scores,[]);
 });
 test('Super dios reabre resultados validados y anulados para corregirlos',async()=>{
   localStorage.clear();api.startDemo();let s=await api.snapshot();const a=s.patrols[0].id,b=s.patrols[1].id;

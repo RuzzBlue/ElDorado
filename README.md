@@ -69,7 +69,7 @@ Con Node.js 22 o posterior:
 npm start
 ```
 
-Abre `http://127.0.0.1:4173`. El botón **Ver programa (PDF)** abre el programa del campamento dentro de la aplicación; para registrar resultados, entra con tus credenciales de Supabase. No es necesario instalar paquetes.
+Abre `http://127.0.0.1:4173`. El botón **Ver programa** abre el programa del campamento (páginas como imágenes) dentro de la aplicación; para registrar resultados, entra con tus credenciales de Supabase. No es necesario instalar paquetes. Las imágenes están en `programa/` y `programa.pdf` queda como archivo fuente, sin publicarse.
 
 Si Supabase no está configurado, el acceso real queda deshabilitado. Después de modificar `config.js`, recarga la página. No abras el HTML haciendo doble clic: los módulos JavaScript necesitan un servidor HTTP.
 

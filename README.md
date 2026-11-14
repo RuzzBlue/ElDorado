@@ -51,7 +51,7 @@ Las funciones necesitan `pgcrypto` instalado en el esquema `extensions`, que es 
 1. Crea o usa un repositorio de GitHub y sube los archivos a su rama `main`.
 2. En **Settings → Pages → Build and deployment → Source**, elige **GitHub Actions**.
 3. En **Actions**, ejecuta **Publicar El Dorado**, o realiza un cambio en `main`.
-4. El flujo ejecutará las pruebas y publicará únicamente los nueve archivos estáticos necesarios. SQL, documentación y pruebas no se copian al sitio publicado por ese flujo.
+4. El flujo ejecutará las pruebas y publicará únicamente los archivos estáticos necesarios. SQL, documentación y pruebas no se copian al sitio publicado por ese flujo.
 5. Abre la URL que devuelve GitHub Pages, normalmente `https://TU_USUARIO.github.io/TU_REPOSITORIO/`.
 6. Entra desde dos celulares y verifica que el segundo vea un resultado nuevo al actualizar o tras unos 15 segundos.
 
@@ -69,7 +69,7 @@ Con Node.js 22 o posterior:
 npm start
 ```
 
-Abre `http://127.0.0.1:4173` y pulsa **Explorar demostración**. No es necesario instalar paquetes. La demo conserva datos en este navegador; no sincroniza celulares ni requiere contraseña.
+Abre `http://127.0.0.1:4173`. El botón **Ver programa (PDF)** abre el programa del campamento dentro de la aplicación; para registrar resultados, entra con tus credenciales de Supabase. No es necesario instalar paquetes.
 
 Si Supabase no está configurado, el acceso real queda deshabilitado. Después de modificar `config.js`, recarga la página. No abras el HTML haciendo doble clic: los módulos JavaScript necesitan un servidor HTTP.
 

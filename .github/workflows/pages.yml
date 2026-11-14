@@ -25,7 +25,7 @@ jobs:
       - name: Preparar archivos públicos
         run: |
           mkdir -p public
-          cp index.html app.js api.js admin-db.js domain.js config.js styles.css icon.svg .nojekyll public/
+          cp index.html app.js api.js admin-db.js domain.js config.js styles.css icon.svg .nojekyll programa.pdf public/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

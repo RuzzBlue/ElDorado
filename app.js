@@ -36,9 +36,9 @@ function viewProgram(){
   img.onclick=()=>{img.classList.toggle('zoom');view.classList.toggle('zoomed',img.classList.contains('zoom'));view.scrollTop=0;view.scrollLeft=0;};
   input.onchange=()=>{const n=parseInt(input.value,10);show(Number.isFinite(n)?n:page);};
   input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}};
-  let touchX=null;
-  view.addEventListener('touchstart',e=>{touchX=e.touches[0]?.clientX??null;},{passive:true});
-  view.addEventListener('touchend',e=>{if(touchX===null||img.classList.contains('zoom')){touchX=null;return;}const dx=(e.changedTouches[0]?.clientX??touchX)-touchX;if(Math.abs(dx)>60)show(page+(dx<0?1:-1));touchX=null;},{passive:true});
+  let touchX=null,touchY=null;
+  view.addEventListener('touchstart',e=>{touchX=e.touches[0]?.clientX??null;touchY=e.touches[0]?.clientY??null;},{passive:true});
+  view.addEventListener('touchend',e=>{if(touchX===null||img.classList.contains('zoom')){touchX=touchY=null;return;}const dx=(e.changedTouches[0]?.clientX??touchX)-touchX,dy=(e.changedTouches[0]?.clientY??touchY)-touchY;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy))show(page+(dx<0?1:-1));touchX=touchY=null;},{passive:true});
   modal.onkeydown=e=>{if(e.target===input)return;if(e.key==='ArrowLeft'){e.preventDefault();show(page-1);}else if(e.key==='ArrowRight'){e.preventDefault();show(page+1);}};
   show(1);
 }
